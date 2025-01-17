@@ -12,7 +12,7 @@ fn handle_interrupt() {
     exit(1);
 }
 
-// Install Git and Conda using winget (Windows) or download (macOS)
+// Install Git and Conda using winget (Windows only)
 fn install_with_winget(package: &str) {
     println!("{}", format!("Installing {} using winget...", package).blue());
     let status = Command::new("winget")
@@ -30,35 +30,32 @@ fn install_with_winget(package: &str) {
     }
 }
 
-fn install_conda() {
-    let user_name = whoami::username();
-    if cfg!(target_os = "windows") {
-        install_with_winget("Continuum.Miniconda3");
-    } else if cfg!(target_os = "macos") {
-        // macOS Conda installation via Homebrew
-        println!("{}", "Installing Miniconda3 on macOS via Homebrew...".blue());
-        let status = Command::new("brew")
-            .args(["install", "miniconda"])
-            .status();
-
-        match status {
-            Ok(status) if status.success() => {
-                println!("{}", "Miniconda3 installed successfully on macOS.".green());
-            }
-            _ => {
-                println!("{}", "Failed to install Miniconda3. Please install it manually and retry.".red());
-                exit(1);
-            }
-        }
-    }
-}
-
 // Check if Conda is installed and available
 fn is_conda_installed(conda_path: &str) -> bool {
     Command::new(conda_path)
         .arg("--version")
         .output()
         .is_ok()
+}
+
+// Check if Conda is available on Windows and offer installation via winget
+fn check_and_install_conda() {
+    let user_name = whoami::username();
+    let conda_path = if cfg!(target_os = "windows") {
+        format!("C:\\Users\\{}\\Miniconda3\\condabin\\conda.bat", user_name)
+    } else {
+        "~/miniconda3/condabin/conda".to_string()
+    };
+
+    if !is_conda_installed(&conda_path) {
+        if cfg!(target_os = "windows") {
+            println!("{}", "Conda is not installed. Installing Conda using winget...".yellow());
+            install_with_winget("Continuum.Miniconda3");
+        } else {
+            println!("{}", "Conda is not installed. Please install Conda manually on your system.".red());
+            exit(1);
+        }
+    }
 }
 
 fn self_update(s2l_dir: &str) -> bool {
@@ -119,12 +116,9 @@ fn main() {
     };
 
     // Check if Conda is installed
-    if !is_conda_installed(&conda_path) {
-        println!("{}", "Conda is not installed. Installing Conda...".yellow());
-        install_conda();
-    }
+    check_and_install_conda();
 
-    // Windows-specific setup for missing Git and Conda
+    // Windows-specific setup for missing Git
     if cfg!(target_os = "windows") {
         if Command::new("git").arg("--version").output().is_err() {
             install_with_winget("Git.Git");
@@ -188,15 +182,19 @@ fn main() {
                     .args(["-m", "pip", "install", "torch", "--index-url", "https://download.pytorch.org/whl/cu124"])
                     .status()
                     .expect("Failed to install CUDA variant of PyTorch");
+                
+                // Delete the non-CUDA version of the file
                 fs::remove_file("S2L\\libs\\roi_visualizer.py").unwrap_or_else(|err| {
                     println!("{}", format!("Failed to delete roi_visualizer.cp311-win_amd64.pyd: {}", err).red());
                 });
             } else {
-                fs::remove_file("S2L\\libs\\roi_visualizer.cp311-win_amd64.pyd").unwrap_or_else(|err| {
-                    println!("{}", format!("Failed to delete roi_visualizer.cp311-win_amd64.pyd: {}", err).red());
+                // Delete the CUDA version of the file
+                fs::remove_file("S2L\\libs\\roi_visualizer.cp311-cu124-win_amd64.pyd").unwrap_or_else(|err| {
+                    println!("{}", format!("Failed to delete roi_visualizer.cp311-cu124-win_amd64.pyd: {}", err).red());
                 });
             }
         } else if cfg!(target_os = "macos") {
+            // Remove the Windows-specific version on macOS
             fs::remove_file("S2L\\libs\\roi_visualizer.cp311-win_amd64.pyd").unwrap_or_else(|err| {
                 println!("{}", format!("Failed to delete roi_visualizer.cp311-win_amd64.pyd: {}", err).red());
             });
