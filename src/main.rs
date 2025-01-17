@@ -12,7 +12,7 @@ fn handle_interrupt() {
     exit(1);
 }
 
-// Install Git and Conda using winget
+// Install Git and Conda using winget (Windows) or download (macOS)
 fn install_with_winget(package: &str) {
     println!("{}", format!("Installing {} using winget...", package).blue());
     let status = Command::new("winget")
@@ -30,7 +30,37 @@ fn install_with_winget(package: &str) {
     }
 }
 
-// Self-update mechanism
+fn install_conda() {
+    let user_name = whoami::username();
+    if cfg!(target_os = "windows") {
+        install_with_winget("Continuum.Miniconda3");
+    } else if cfg!(target_os = "macos") {
+        // macOS Conda installation via Homebrew
+        println!("{}", "Installing Miniconda3 on macOS via Homebrew...".blue());
+        let status = Command::new("brew")
+            .args(["install", "miniconda"])
+            .status();
+
+        match status {
+            Ok(status) if status.success() => {
+                println!("{}", "Miniconda3 installed successfully on macOS.".green());
+            }
+            _ => {
+                println!("{}", "Failed to install Miniconda3. Please install it manually and retry.".red());
+                exit(1);
+            }
+        }
+    }
+}
+
+// Check if Conda is installed and available
+fn is_conda_installed(conda_path: &str) -> bool {
+    Command::new(conda_path)
+        .arg("--version")
+        .output()
+        .is_ok()
+}
+
 fn self_update(s2l_dir: &str) -> bool {
     if !Path::new(s2l_dir).exists() {
         println!("{}", "S2L folder does not exist. Skipping self-update.".yellow());
@@ -62,7 +92,6 @@ fn self_update(s2l_dir: &str) -> bool {
     }
 }
 
-// Relaunch the current script
 fn relaunch_script() {
     let args: Vec<String> = env::args().collect();
     let current_executable = env::current_exe().expect("Failed to get the current executable path");
@@ -89,14 +118,16 @@ fn main() {
         "~/miniconda3/condabin/conda".to_string()
     };
 
+    // Check if Conda is installed
+    if !is_conda_installed(&conda_path) {
+        println!("{}", "Conda is not installed. Installing Conda...".yellow());
+        install_conda();
+    }
+
     // Windows-specific setup for missing Git and Conda
     if cfg!(target_os = "windows") {
         if Command::new("git").arg("--version").output().is_err() {
             install_with_winget("Git.Git");
-        }
-
-        if !Path::new(&conda_path).exists() {
-            install_with_winget("Anaconda.Miniconda3");
         }
     }
 
