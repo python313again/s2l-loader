@@ -75,7 +75,7 @@ else:
 env_name = sys.argv[1] if len(sys.argv) > 1 else "S2L"
 
 # Paths and environment variables
-executable_path = f"C:\\Users\\{os.getlogin()}\\miniconda3\\envs\\{env_name}\\python.exe" if os.name == "nt" else f"~/miniconda3/envs/{env_name}/bin/python"
+executable_path = f"C:\\Users\\{os.getlogin()}\\miniconda3\\envs\\{env_name}\\python.exe" if os.name == "nt" else f"/opt/miniconda3/envs/{env_name}/bin/python"
 conda_path = f"C:\\Users\\{os.getlogin()}\\Miniconda3\\condabin\\conda.bat" if os.name == "nt" else "conda"
 
 # Check if Git is installed
