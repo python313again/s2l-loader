@@ -5,7 +5,6 @@ from colorama import Fore
 import sys
 import signal
 import platform
-
 # Initialize Colorama
 colorINIT()
 
@@ -20,6 +19,7 @@ signal.signal(signal.SIGINT, handle_interrupt)
 def self_update():
     """
     Checks for updates in the S2L folder by pulling the latest version from the Git repository.
+    If updates are found, the script continues with the latest version.
     """
     s2l_dir = os.path.join(os.getcwd(), "S2L")
 
@@ -29,6 +29,7 @@ def self_update():
 
     print(Fore.BLUE + "Checking for updates in the S2L folder...")
     try:
+        # Pull updates if inside a Git repository
         result = subprocess.run(
             ["git", "pull", "--rebase"],
             cwd=s2l_dir,
@@ -38,10 +39,12 @@ def self_update():
         )
         output = result.stdout
 
+        # If no updates are found
         if "Already up to date" in output:
             print(Fore.GREEN + "No updates available in the S2L repository.")
             return False
 
+        # If updates are applied
         print(Fore.GREEN + "Updates have been applied to the S2L repository.")
         return True
 
@@ -72,53 +75,32 @@ else:
 env_name = sys.argv[1] if len(sys.argv) > 1 else "S2L"
 
 # Paths and environment variables
-if os.name == "nt":
-    executable_path = f"C:\\Users\\{os.getlogin()}\\miniconda3\\envs\\{env_name}\\python.exe"
-    conda_path = f"C:\\Users\\{os.getlogin()}\\Miniconda3\\condabin\\conda.bat"
-else:
-    executable_path = f"~/miniconda3/envs/{env_name}/bin/python"
-    conda_path = "~/miniconda3/bin/conda"
-
-# Function to install Miniconda3
-def install_miniconda():
-    if os.name == "nt":
-        print(Fore.RED + "Miniconda auto-installation is not supported on Windows via this function.")
-        exit(1)
-
-    url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-    if platform.system() == "Darwin":
-        url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
-
-    print(Fore.BLUE + "Downloading Miniconda installer...")
-    installer_path = "/tmp/miniconda_installer.sh"
-    subprocess.run(["curl", "-o", installer_path, "-L", url], check=True)
-
-    print(Fore.BLUE + "Installing Miniconda...")
-    subprocess.run(["bash", installer_path, "-b"], check=True)
-    os.environ["PATH"] += os.pathsep + "~/miniconda3/bin"
+executable_path = f"C:\\Users\\{os.getlogin()}\\miniconda3\\envs\\{env_name}\\python.exe" if os.name == "nt" else f"~/miniconda3/envs/{env_name}/bin/python"
+conda_path = f"C:\\Users\\{os.getlogin()}\\Miniconda3\\condabin\\conda.bat" if os.name == "nt" else "conda"
 
 # Check if Git is installed
 try:
-    subprocess.run(["git", "--version"], stdout=subprocess.DEVNULL, check=True)
+    subprocess.run(["git", "--version"], shell=True, stdout=subprocess.DEVNULL, check=True)
 except subprocess.CalledProcessError:
-    print(Fore.RED + "Git is not installed. Attempting to install Git...")
-    if os.name == "posix":
-        if platform.system() == "Linux":
-            subprocess.run(["sudo", "apt-get", "install", "-y", "git"], check=True)
-        elif platform.system() == "Darwin":
-            subprocess.run(["brew", "install", "git"], check=True)
-    else:
-        print(Fore.RED + "Please install Git manually for your system.")
-        exit(1)
+    print(Fore.RED + "Git is not installed. Please install Git manually to proceed.")
+    exit(1)
 
-# Check if Conda is installed
+# Conda installation check and environment setup
 try:
-    subprocess.run([conda_path, "--version"], shell=True, text=True, check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(f"{conda_path} --version", shell=True, text=True, check=True)
 except subprocess.CalledProcessError:
-    print(Fore.BLUE + "Conda is not installed. Installing Miniconda...")
-    install_miniconda()
-    print(Fore.GREEN + "Miniconda installed successfully. Please restart the script.")
-    exit(0)
+    if os.name == "nt":
+        print(Fore.BLUE + "Conda is not installed. Attempting to install it using winget...")
+        try:
+            subprocess.run(["winget", "install", "--id", "Anaconda.Miniconda3", "-e"], check=True)
+            print(Fore.GREEN + "Conda installed successfully. Please restart the script.")
+            exit(0)
+        except subprocess.CalledProcessError:
+            print(Fore.RED + "Failed to install Conda. Winget may not be installed or is misconfigured.")
+            exit(1)
+    else:
+        print(Fore.RED + "Conda is not installed. Please install it manually.")
+        exit(1)
 
 # Check if the target environment exists
 env_list = subprocess.run([conda_path, "env", "list"], shell=True, capture_output=True, text=True)
@@ -134,17 +116,21 @@ if not os.path.exists("S2L"):
 os.chdir("S2L")
 subprocess.run([executable_path, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
 
-if os.path.exists("libs/roi_visualizer.py") and os.path.exists("libs/roi_visualizer.cp311-win_amd64.pyd"):
-    if platform.system() != "Darwin":
+
+if os.path.exists("libs\\roi_visualizer.py") and os.path.exists("libs\\roi_visualizer.cp311-win_amd64.pyd"):
+
+    if not platform.system() == "Darwin":
+
+        # CUDA installation prompt
         if "y" in input(Fore.BLUE + "Do you want to use the CUDA variant of PyTorch (huge performance boost on NVIDIA GPUs)? y/n: ").strip().lower():
             subprocess.run([executable_path, "-m", "pip", "uninstall", "torch", "-y"], check=True)
             subprocess.run([executable_path, "-m", "pip", "install", "torch", "--index-url", "https://download.pytorch.org/whl/cu124"], check=True)
-            os.remove("libs/roi_visualizer.py")
+            os.remove("libs\\roi_visualizer.py")
         else:
-            os.remove("libs/roi_visualizer.cp311-win_amd64.pyd")
+            os.remove("libs\\roi_visualizer.cp311-win_amd64.pyd")
     else:
         print(Fore.BLUE + "Your system is not compatible with CUDA anyway, using non-CUDA version.")
-        os.remove("libs/roi_visualizer.cp311-win_amd64.pyd")
+        os.remove("S2L\\libs\\roi_visualizer.cp311-win_amd64.pyd")
 
 # Launch the application
 print(Fore.GREEN + "Installation and setup are complete. Launching the application...")
