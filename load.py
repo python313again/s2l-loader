@@ -112,6 +112,7 @@ os.chdir("S2L")
 subprocess.run([executable_path, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
 
 
+
 if "+cu124" not in subprocess.check_output([executable_path, "-m", "pip", "show", "torch"]).decode("utf-8"):
 
     if not platform.system() == "Darwin":
@@ -120,12 +121,24 @@ if "+cu124" not in subprocess.check_output([executable_path, "-m", "pip", "show"
             subprocess.run([executable_path, "-m", "pip", "uninstall", "torch", "-y"], check=True)
             subprocess.run([executable_path, "-m", "pip", "install", "cupy-cuda12x"], check=True)
             subprocess.run([executable_path, "-m", "pip", "install", "torch", "--index-url", "https://download.pytorch.org/whl/cu124"], check=True)
-            os.remove("libs\\roi_visualizer.py")
+            
+            try:
+                os.remove("libs\\roi_visualizer.py")
+            except FileNotFoundError:
+                pass
+
         else:
-            os.remove("libs\\roi_visualizer.cp311-win_amd64.pyd")
+            try:
+                os.remove("libs\\roi_visualizer.cp311-win_amd64.pyd")
+            except FileNotFoundError:
+                pass
+            
     else:
         print(Fore.BLUE + "Your system is not compatible with CUDA anyway, using non-CUDA version.")
-        os.remove("S2L\\libs\\roi_visualizer.cp311-win_amd64.pyd")
+        try:
+            os.remove("libs\\roi_visualizer.cp311-win_amd64.pyd")
+        except FileNotFoundError:
+            pass
 
 # Launch the application
 print(Fore.GREEN + "Installation and setup are complete. Launching the application...")
