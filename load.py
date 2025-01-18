@@ -53,19 +53,14 @@ def self_update():
         print(Fore.YELLOW + e.stderr)
         return False
 
-# Relaunch the current script
-def relaunch_script():
-    python_executable = sys.executable
-    script_path = os.path.abspath(__file__)
-    os.execv(python_executable, [python_executable, script_path] + sys.argv[1:])
+
 
 # Self-update before proceeding
 if os.path.exists("S2L"):
     if "y" in input(Fore.BLUE + "Would you like to check for updates in the S2L folder? (y/n): ").strip().lower():
         updated = self_update()
         if updated:
-            print(Fore.GREEN + "Restarting the script to use the updated repository...")
-            relaunch_script()
+            pass
     else:
         print(Fore.YELLOW + "Skipping updates for the S2L repository.")
 else:
