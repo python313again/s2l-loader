@@ -112,14 +112,13 @@ os.chdir("S2L")
 subprocess.run([executable_path, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
 
 
-if os.path.exists("libs\\roi_visualizer.py") and os.path.exists("libs\\roi_visualizer.cp311-win_amd64.pyd"):
+if "+cu124" not in subprocess.check_output([executable_path, "-m", "pip", "show", "torch"]).decode("utf-8"):
 
     if not platform.system() == "Darwin":
-
         # CUDA installation prompt
         if "y" in input(Fore.BLUE + "Do you want to use the CUDA variant of PyTorch (huge performance boost on NVIDIA GPUs)? y/n: ").strip().lower():
             subprocess.run([executable_path, "-m", "pip", "uninstall", "torch", "-y"], check=True)
-            subprocess.run([executable_path, "-m", "pip", "install", "cupy-cuda12x", "-y"], check=True)
+            subprocess.run([executable_path, "-m", "pip", "install", "cupy-cuda12x"], check=True)
             subprocess.run([executable_path, "-m", "pip", "install", "torch", "--index-url", "https://download.pytorch.org/whl/cu124"], check=True)
             os.remove("libs\\roi_visualizer.py")
         else:
