@@ -79,11 +79,11 @@ executable_path = f"C:\\Users\\{os.getlogin()}\\miniconda3\\envs\\{env_name}\\py
 conda_path = f"C:\\Users\\{os.getlogin()}\\Miniconda3\\condabin\\conda.bat" if os.name == "nt" else "conda"
 
 # Check if Git is installed
-try:
-    subprocess.run(["git", "--version"], shell=True, stdout=subprocess.DEVNULL, check=True)
-except subprocess.CalledProcessError:
+
+if "version" not in subprocess.check_output(["git", "--version"], shell=True, stdout=subprocess.DEVNULL):
     print(Fore.RED + "Git is not installed. Please install Git manually to proceed.")
     exit(1)
+
 
 # Conda installation check and environment setup
 try:
