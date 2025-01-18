@@ -103,7 +103,7 @@ except subprocess.CalledProcessError:
         exit(1)
 
 # Check if the target environment exists
-env_list = subprocess.run([conda_path, "env", "list"], shell=True, capture_output=True, text=True)
+env_list = subprocess.check_output(f"{conda_path} env list", shell=True, text=True)
 if env_name in env_list.stdout:
     print(Fore.BLUE + f"The environment '{env_name}' already exists. Skipping environment creation.")
 else:
