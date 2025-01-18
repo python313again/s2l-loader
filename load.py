@@ -80,7 +80,7 @@ conda_path = f"C:\\Users\\{os.getlogin()}\\Miniconda3\\condabin\\conda.bat" if o
 
 # Check if Git is installed
 
-if "version" not in subprocess.check_output("git --version", shell=True):
+if "version" not in subprocess.check_output("git --version", shell=True).decode("utf-8"):
     print(Fore.RED + "Git is not installed. Please install Git manually to proceed.")
     exit(1)
 
