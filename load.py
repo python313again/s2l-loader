@@ -135,4 +135,4 @@ if os.path.exists("libs\\roi_visualizer.py") and os.path.exists("libs\\roi_visua
 
 # Launch the application
 print(Fore.GREEN + "Installation and setup are complete. Launching the application...")
-subprocess.Popen(f"{executable_path} main.py", shell=True)
+subprocess.call(f"{executable_path} main.py", shell=True)
