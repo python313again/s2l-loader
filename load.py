@@ -107,7 +107,7 @@ env_list = subprocess.run([conda_path, "env", "list"], shell=True, capture_outpu
 if env_name in env_list.stdout:
     print(Fore.BLUE + f"The environment '{env_name}' already exists. Skipping environment creation.")
 else:
-    subprocess.run([conda_path, "create", "-n", env_name, "python=3.11.9", "-y"], shell=True)
+    subprocess.run(f"{conda_path} create -n {env_name} python=3.11.9", shell=True)
 
 # Clone the repository if it doesn't exist
 if not os.path.exists("S2L"):
